@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La biblioteca del profe Matus</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+        body { background-color: #030712; color: #f8fafc; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        
+        /* Pantallas */
+        .screen { display: none; width: 100%; max-width: 480px; min-height: 100vh; padding: 16px; margin: 0 auto; }
+        .screen.active { display: block; }
+
+        /* Splash Screen */
+        #splashScreen { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; position: fixed; inset: 0; background: radial-gradient(circle at center, #0f172a 0%, #030712 100%); z-index: 100; padding: 24px; border: 2px solid #059669; }
+        .splash-badge { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 3px; color: #34d399; background: rgba(5, 150, 105, 0.1); border: 1px solid rgba(5, 150, 105, 0.3); padding: 6px 16px; border-radius: 9999px; margin-bottom: 20px; }
+        #splashScreen h1 { font-size: 2rem; font-weight: 800; color: #f8fafc; margin-bottom: 8px; text-shadow: 0 0 20px rgba(52, 211, 153, 0.3); }
+        #splashScreen h1 span { color: #34d399; }
+        #splashScreen p.author { font-size: 1rem; color: #94a3b8; margin-top: 12px; font-weight: 500; }
+        #splashScreen p.author strong { color: #38bdf8; }
+
+        /* Login Box */
+        .auth-box { background-color: #0f172a; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; margin-top: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .auth-box h2 { font-size: 1.25rem; font-weight: bold; color: #34d399; margin-bottom: 16px; text-align: center; }
+
+        input[type="text"], input[type="password"], textarea, input[type="file"] {
+            width: 100%; padding: 10px; background-color: #0f172a; border: 1px solid #1e293b; 
+            border-radius: 10px; color: #fff; font-size: 0.8125rem; outline: none; margin-bottom: 10px;
+        }
+        input:focus, textarea:focus { border-color: #10b981; box-shadow: 0 0 8px rgba(16,185,129,0.2); }
+        label { font-size: 0.75rem; color: #94a3b8; display: block; margin-bottom: 4px; }
+        
+        .btn-enter, .btn-primary {
+            width: 100%; padding: 12px; background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white; font-weight: bold; border: none; border-radius: 12px; cursor: pointer;
+            font-size: 0.95rem; box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); text-align: center; margin-bottom: 12px;
+            transition: transform 0.2s;
+        }
+        .btn-enter:hover, .btn-primary:hover { transform: scale(1.02); }
+
+        .btn-sync { width: 100%; padding: 8px; background-color: #0369a1; color: white; font-weight: 500; border: none; border-radius: 10px; font-size: 0.75rem; cursor: pointer; text-align: center; margin-bottom: 16px; }
+        .btn-sync:hover { background-color: #0284c7; }
+
+        header { text-align: center; margin-bottom: 20px; padding-top: 10px; }
+        header h2 { font-size: 1.35rem; font-weight: bold; color: #34d399; text-shadow: 0 0 10px rgba(52, 211, 153, 0.2); }
+        p.sub { font-size: 0.75rem; color: #94a3b8; margin-top: 2px; }
+
+        .card { background-color: #0f172a; border: 1px solid #1e293b; border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); }
+        .grid-images { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .img-box { text-align: center; }
+        .img-box span { font-size: 0.65rem; color: #64748b; display: block; margin-bottom: 2px; }
+        .card img { width: 100%; height: 110px; object-fit: cover; border-radius: 8px; border: 1px solid #1e293b; background: #030712; cursor: pointer; transition: opacity 0.2s; }
+        .card img:hover { opacity: 0.85; }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .card h3 { font-size: 1rem; font-weight: bold; color: #6ee7b7; }
+        .badge { font-size: 0.65rem; padding: 2px 8px; background-color: #064e3b; color: #34d399; border: 1px solid #047857; border-radius: 9999px; }
+        .specs { font-size: 0.75rem; color: #cbd5e1; margin-bottom: 6px; }
+        .notas { font-size: 0.75rem; color: #94a3b8; background-color: #030712; padding: 8px; border-radius: 8px; margin-bottom: 10px; }
+        .actions-bar { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #1e293b; margin-top: 8px; padding-top: 8px;}
+        .btn-pdf { font-size: 0.75rem; color: #38bdf8; background: #0369a1; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: 500; display: inline-block; }
+        .btn-delete { background: none; border: none; color: #ef4444; font-size: 0.75rem; cursor: pointer; }
+
+        /* Lightbox Pantalla Completa */
+        #lightboxModal { position: fixed; inset: 0; background-color: rgba(3,7,18,0.95); display: none; align-items: center; justify-content: center; z-index: 200; padding: 16px; cursor: zoom-out; }
+        #lightboxModal img { max-width: 100%; max-height: 90vh; border-radius: 8px; border: 1px solid #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+
+        /* Modales */
+        #modal, #adminModal { position: fixed; inset: 0; background-color: rgba(3,7,18,0.85); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 150; overflow-y: auto; }
+        .modal-content { background-color: #0f172a; border: 1px solid #1e293b; width: 100%; max-width: 400px; border-radius: 16px; padding: 20px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .modal-content h2 { font-size: 1.125rem; font-weight: bold; color: #34d399; margin-bottom: 14px; }
+        .modal-buttons { display: flex; gap: 8px; margin-top: 12px; }
+        .btn-secondary { width: 50%; padding: 10px; background-color: #334155; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        .btn-success { width: 50%; padding: 10px; background-color: #059669; color: white; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <!-- 1. PANTALLA DE PRESENTACIÓN -->
+    <div id="splashScreen">
+        <div class="splash-badge">⚡ Sistema de Consulta Técnica</div>
+        <h1>La biblioteca del <span>Profe Matus</span></h1>
+        <p class="author">Diseñado por: <br><strong style="font-size: 1.25rem; display:inline-block; margin-top:6px;">Ing. Roberto Matus Francisco</strong></p>
+        <button class="btn-enter" style="width: auto; padding: 12px 32px; margin-top: 40px;" onclick="irALogin()">INGRESAR AL SISTEMA 🚀</button>
+    </div>
+
+    <!-- 2. PANTALLA DE AUTENTICACIÓN (LOGIN) -->
+    <div id="loginScreen" class="screen">
+        <header style="margin-top: 40px;">
+            <h2>🔐 Acceso Restringido</h2>
+            <p class="sub">Introduce tu llave de acceso autorizada</p>
+        </header>
+
+        <div class="auth-box">
+            <h2>Credenciales de Usuario</h2>
+            <form onsubmit="verificarAcceso(event)">
+                <label>Usuario / Alias</label>
+                <input type="text" id="loginUser" required placeholder="Tu nombre de usuario">
+
+                <label>Llave de Acceso (Contraseña)</label>
+                <input type="password" id="loginPass" required placeholder="Llave provista por el admin">
+
+                <button type="submit" class="btn-enter" style="margin-top: 10px;">Verificar Acceso</button>
+            </form>
+            <button onclick="abrirAdminModal()" class="btn-sync" style="background-color: #334155; margin-top: 8px;">⚙️ Panel Administrador (Generar Llaves)</button>
+        </div>
+    </div>
+
+    <!-- 3. APLICACIÓN PRINCIPAL (BIBLIOTECA) -->
+    <div id="mainApp" class="screen">
+        <header>
+            <h2>⚡ La Biblioteca del Profe Matus</h2>
+            <p class="sub">Álbum de Componentes y Banco Datasheet Offline</p>
+        </header>
+
+        <div>
+            <input type="text" id="searchInput" placeholder="Buscar por código, nombre o tipo..." onkeyup="filtrarComponentes()">
+        </div>
+
+        <button onclick="toggleModal(true)" class="btn-primary">+ Nuevo Componente</button>
+        <button onclick="validarYGenerarCodigo()" class="btn-sync">🔄 Generar Archivo para GitHub (Actualizar App)</button>
+
+        <div id="gridComponentes"></div>
+    </div>
+
+    <!-- LIGHTBOX PANTALLA COMPLETA -->
+    <div id="lightboxModal" onclick="cerrarLightbox()">
+        <img id="lightboxImg" src="" alt="Vista ampliada">
+    </div>
+
+    <!-- MODAL NUEVO COMPONENTE -->
+    <div id="modal">
+        <div class="modal-content">
+            <h2>Agregar Componente</h2>
+            <form id="componentForm" onsubmit="procesarFormulario(event)">
+                <label>Nombre / Modelo</label>
+                <input type="text" id="nombre" required placeholder="ej. IRF540N, TNY279PN">
+                <label>Tipo</label>
+                <input type="text" id="tipo" required placeholder="ej. MOSFET, IC, Diodo">
+                <label>Características Principales</label>
+                <textarea id="caracteristicas" rows="2" required placeholder="Voltaje, corriente, encapsulado"></textarea>
+                <label>Notas de Aplicación / Pinout</label>
+                <input type="text" id="notas" placeholder="Observaciones de taller">
+                <label>📸 Foto del Componente</label>
+                <input type="file" id="imgComponente" accept="image/*">
+                <label>📐 Foto del Diagrama / Esquemático</label>
+                <input type="file" id="imgDiagrama" accept="image/*">
+                <label>🔗 Enlace Web del Datasheet (URL)</label>
+                <input type="text" id="pdfUrl" placeholder="https://...">
+                <div class="modal-buttons">
+                    <button type="button" onclick="toggleModal(false)" class="btn-secondary">Cancelar</button>
+                    <button type="submit" class="btn-success">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL ADMINISTRADOR -->
+    <div id="adminModal">
+        <div class="modal-content">
+            <h2>⚙️ Administrador de Llaves</h2>
+            <p style="font-size: 0.75rem; color: #94a3b8; margin-bottom: 12px;">Agrega usuarios y contraseñas autorizadas.</p>
+            <form onsubmit="guardarNuevaLlave(event)">
+                <label>Nuevo Usuario</label>
+                <input type="text" id="newAdminUser" required placeholder="Nombre del colaborador">
+                <label>Nueva Contraseña / Llave</label>
+                <input type="text" id="newAdminPass" required placeholder="Clave de acceso">
+                <div class="modal-buttons">
+                    <button type="button" onclick="cerrarAdminModal()" class="btn-secondary">Cerrar</button>
+                    <button type="submit" class="btn-success">Registrar Llave</button>
+                </div>
+            </form>
+            <div id="listaLlaves" style="margin-top: 15px; font-size: 0.75rem; color: #cbd5e1;"></div>
+        </div>
+    </div>
+
+    <script>
+        let usuariosAutorizados = [
+            { usuario: "profe", pass: "matus2026" },
+            { usuario: "admin", pass: "admin123" }
+        ];
+
+        try {
+            let savedUsers = JSON.parse(localStorage.getItem('biblioteca_usuarios'));
+            if (savedUsers) usuariosAutorizados = savedUsers;
+        } catch(e) {}
+
+        function irALogin() {
+            document.getElementById('splashScreen').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('splashScreen').style.display = 'none';
+                document.getElementById('loginScreen').classList.add('active');
+            }, 500);
+        }
+
+        function verificarAcceso(e) {
+            e.preventDefault();
+            const usr = document.getElementById('loginUser').value.trim();
+            const pass = document.getElementById('loginPass').value.trim();
+            let encontrado = usuariosAutorizados.find(u => u.usuario === usr && u.pass === pass);
+
+            if (encontrado) {
+                document.getElementById('loginScreen').classList.remove('active');
+                document.getElementById('mainApp').classList.add('active');
+                renderizar(componentes);
+            } else {
+                alert('⚠️ Acceso denegado: Usuario o llave de acceso incorrectos.');
+            }
+        }
+
+        function abrirAdminModal() {
+            let claveAdminMaster = prompt("Introduce la clave maestra de administrador:");
+            if (claveAdminMaster === "MatusAdmin2026") {
+                document.getElementById('adminModal').style.display = 'flex';
+                mostrarLlavesRegistradas();
+            } else if (claveAdminMaster !== null) {
+                alert("Clave maestra incorrecta.");
+            }
+        }
+
+        function cerrarAdminModal() {
+            document.getElementById('adminModal').style.display = 'none';
+        }
+
+        function guardarNuevaLlave(e) {
+            e.preventDefault();
+            const usr = document.getElementById('newAdminUser').value.trim();
+            const pass = document.getElementById('newAdminPass').value.trim();
+            usuariosAutorizados.push({ usuario: usr, pass: pass });
+            localStorage.setItem('biblioteca_usuarios', JSON.stringify(usuariosAutorizados));
+            alert(`¡Llave generada con éxito para "${usr}"!`);
+            document.getElementById('newAdminUser').value = '';
+            document.getElementById('newAdminPass').value = '';
+            mostrarLlavesRegistradas();
+        }
+
+        function mostrarLlavesRegistradas() {
+            const contenedor = document.getElementById('listaLlaves');
+            contenedor.innerHTML = '<strong>Usuarios con acceso:</strong><br>';
+            usuariosAutorizados.forEach(u => {
+                contenedor.innerHTML += `- ${u.usuario} (Pass: ${u.pass})<br>`;
+            });
+        }
+
+        function abrirLightbox(urlImagen) {
+            const lightbox = document.getElementById('lightboxModal');
+            const img = document.getElementById('lightboxImg');
+            img.src = urlImagen;
+            lightbox.style.display = 'flex';
+        }
+
+        function cerrarLightbox() {
+            document.getElementById('lightboxModal').style.display = 'none';
+        }
+
+        let componentes = [
+            { 
+                id: 1, 
+                nombre: 'TNY279PN', 
+                tipo: 'IC Fuente Conmutada', 
+                caracteristicas: '700V, DIP-8, Regulador Off-line', 
+                notas: 'Revisar optoacoplador asociado en salida.', 
+                imgComp: '', 
+                imgDiag: '', 
+                pdfUrl: '' 
+            }
+        ];
+
+        try {
+            let localData = JSON.parse(localStorage.getItem('biblioteca_profe_matus_oficial'));
+            if (localData && localData.length > 0) {
+                componentes = localData;
+            }
+        } catch (e) {}
+
+        function renderizar(lista) {
+            const grid = document.getElementById('gridComponentes');
+            grid.innerHTML = '';
+
+            if (lista.length === 0) {
+                grid.innerHTML = `<p style="text-align:center; color:#64748b; font-size:0.875rem; padding:20px;">No hay componentes registrados.</p>`;
+                return;
+            }
+
+            lista.forEach((comp) => {
+                let imgCompTag = comp.imgComp ? `<div class="img-box"><span>Componente</span><img src="${comp.imgComp}" ondblclick="abrirLightbox('${comp.imgComp}')"></div>` : `<div class="img-box"><span>Componente</span><img src="" style="display:none"></div>`;
+                let imgDiagTag = comp.imgDiag ? `<div class="img-box"><span>Diagrama</span><img src="${comp.imgDiag}" ondblclick="abrirLightbox('${comp.imgDiag}')"></div>` : `<div class="img-box"><span>Diagrama</span><img src="" style="display:none"></div>`;
+                
+                let seccionImgs = (comp.imgComp || comp.imgDiag) ? `<div class="grid-images">${imgCompTag}${imgDiagTag}</div>` : '';
+                let pdfBtn = comp.pdfUrl ? `<a href="${comp.pdfUrl}" target="_blank" class="btn-pdf">📄 Ver Datasheet Online</a>` : `<span style="font-size:0.7rem; color:#64748b;">Sin Datasheet</span>`;
+
+                grid.innerHTML += `
+                    <div class="card">
+                        ${seccionImgs}
+                        <div class="card-header">
+                            <h3>${comp.nombre}</h3>
+                            <span class="badge">${comp.tipo}</span>
+                        </div>
+                        <div class="specs"><strong>Specs:</strong> ${comp.caracteristicas}</div>
+                        <div class="notas"><strong>Notas:</strong> ${comp.notas || 'Ninguna'}</div>
+                        <div class="actions-bar">
+                            ${pdfBtn}
+                            <button onclick="eliminarComponente(${comp.id})" class="btn-delete">🗑️ Eliminar</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleModal(mostrar) {
+            document.getElementById('modal').style.display = mostrar ? 'flex' : 'none';
+        }
+
+        function comprimirImagen(file, maxWidth, maxHeight, calidad, callback) {
+            if (!file) { callback(null); return; }
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function (event) {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = function () {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > height) {
+                        if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
+                    } else {
+                        if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
+                    }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    callback(canvas.toDataURL('image/jpeg', calidad));
+                };
+            };
+        }
+
+        function procesarFormulario(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('nombre').value;
+            const tipo = document.getElementById('tipo').value;
+            const caracteristicas = document.getElementById('caracteristicas').value;
+            const notas = document.getElementById('notas').value;
+            const pdfUrl = document.getElementById('pdfUrl').value;
+            const fComp = document.getElementById('imgComponente').files[0];
+            const fDiag = document.getElementById('imgDiagrama').files[0];
+
+            comprimirImagen(fComp, 800, 800, 0.75, function(imgCompBase64) {
+                comprimirImagen(fDiag, 800, 800, 0.75, function(imgDiagBase64) {
+                    guardarRegistroFinal(nombre, tipo, caracteristicas, notas, imgCompBase64 || '', imgDiagBase64 || '', pdfUrl);
+                });
+            });
+        }
+
+        function guardarRegistroFinal(nombre, tipo, caracteristicas, notas, imgComp, imgDiag, pdfUrl) {
+            let nuevoRegistro = { id: Date.now(), nombre, tipo, caracteristicas, notas, imgComp, imgDiag, pdfUrl };
+            componentes.push(nuevoRegistro);
+            try {
+                localStorage.setItem('biblioteca_profe_matus_oficial', JSON.stringify(componentes));
+            } catch (err) {
+                alert('Almacenamiento lleno.'); componentes.pop(); return;
+            }
+            document.getElementById('componentForm').reset();
+            toggleModal(false);
+            renderizar(componentes);
+            alert('¡Componente agregado con éxito!');
+        }
+
+        function eliminarComponente(id) {
+            if (confirm('¿Eliminar este componente?')) {
+                componentes = componentes.filter(c => c.id !== id);
+                localStorage.setItem('biblioteca_profe_matus_oficial', JSON.stringify(componentes));
+                renderizar(componentes);
+            }
+        }
+
+        function filtrarComponentes() {
+            const texto = document.getElementById('searchInput').value.toLowerCase();
+            const filtrados = componentes.filter(c => 
+                c.nombre.toLowerCase().includes(texto) || 
+                c.tipo.toLowerCase().includes(texto) || 
+                c.caracteristicas.toLowerCase().includes(texto)
+            );
+            renderizar(filtrados);
+        }
+
+        function validarYGenerarCodigo() {
+            let passwordIngresada = prompt("Introduce la contraseña maestra para generar el código:");
+            
+            if (passwordIngresada === "MatusAdmin2026") {
+                exportarActualizacionGitHub();
+            } else if (passwordIngresada !== null) {
+                alert("❌ Contraseña maestra incorrecta. No tienes autorización para generar el código.");
+            }
+        }
+
+        function exportarActualizacionGitHub() {
+            let htmlActual = document.documentElement.outerHTML;
+            
+            // Reemplaza de forma segura solo el array de componentes sin alterar el resto de la estructura
+            let htmlModificado = htmlActual.replace(/let componentes = \[\s*\{[\s\S]*?\}\s*\];/m, 'let componentes = ' + JSON.stringify(componentes, null, 4) + ';');
+            htmlModificado = htmlModificado.replace(/let usuariosAutorizados = \[[\s\S]*?\];/, 'let usuariosAutorizados = ' + JSON.stringify(usuariosAutorizados, null, 4) + ';');
+
+            let blob = new Blob([htmlModificado], { type: 'text/html' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = 'index.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            
+            alert('¡Archivo index.html actualizado generado con éxito con todos los componentes y elementos intactos!');
+        }
+    </script>
+</body>
+</html>
